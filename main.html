@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz · Quel Pokémon es-tu ?</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0f1a;
+  --card: #111827;
+  --card2: #1a2236;
+  --border: rgba(255,255,255,0.07);
+  --accent: #f59e0b;
+  --accent2: #fbbf24;
+  --text: #f1f5f9;
+  --muted: #64748b;
+  --yes:    #22c55e;
+  --probyes:#86efac;
+  --maybe:  #94a3b8;
+  --probno: #fca5a5;
+  --no:     #ef4444;
+}
+* { box-sizing: border-box; margin:0; padding:0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* BG stars */
+body::before {
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 10%, rgba(245,158,11,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 90%, rgba(139,92,246,0.07) 0%, transparent 60%);
+  pointer-events:none; z-index:0;
+}
+
+.app { position:relative; z-index:1; }
+
+/* ====== SCREENS ====== */
+.screen { display:none; }
+.screen.active { display:block; }
+
+/* ====== INTRO ====== */
+#intro {
+  min-height:100vh;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  text-align:center; padding:2rem;
+}
+#intro.active { display:flex; }
+
+.pokeball-anim {
+  width:90px; height:90px; margin:0 auto 1.5rem;
+  position:relative;
+  animation: float 3s ease-in-out infinite;
+}
+.pokeball-anim svg { width:100%; height:100%; filter: drop-shadow(0 0 20px rgba(245,158,11,0.4)); }
+
+@keyframes float {
+  0%,100% { transform:translateY(0) rotate(0deg); }
+  50% { transform:translateY(-12px) rotate(8deg); }
+}
+
+.intro-tag {
+  font-size:0.7rem; letter-spacing:0.3em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:0.6rem;
+}
+.intro-title {
+  font-family:'Bebas Neue', sans-serif;
+  font-size:clamp(2.8rem,8vw,5rem);
+  line-height:1;
+  color:var(--text);
+}
+.intro-title span { color:var(--accent); }
+.intro-sub {
+  font-size:0.95rem; color:var(--muted); max-width:380px;
+  margin:0.8rem auto 2rem; line-height:1.6;
+}
+
+.start-btn {
+  background: linear-gradient(135deg, var(--accent), #f97316);
+  border:none; border-radius:50px;
+  padding:0.9rem 2.5rem;
+  font-family:'Nunito',sans-serif;
+  font-size:1rem; font-weight:900;
+  color:#000; cursor:pointer;
+  box-shadow: 0 0 30px rgba(245,158,11,0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+  letter-spacing:0.05em;
+}
+.start-btn:hover { transform:translateY(-2px) scale(1.04); box-shadow:0 0 40px rgba(245,158,11,0.6); }
+
+/* Stats categories chips */
+.cats {
+  display:flex; flex-wrap:wrap; gap:0.5rem;
+  justify-content:center; margin-top:1.5rem;
+}
+.cat-chip {
+  font-size:0.72rem; padding:0.3rem 0.8rem;
+  border-radius:99px; background:rgba(255,255,255,0.05);
+  border:1px solid rgba(255,255,255,0.08); color:var(--muted);
+}
+
+/* ====== QUIZ ====== */
+#quiz { min-height:100vh; display:none; flex-direction:column; align-items:center; padding:2rem 1rem 4rem; }
+#quiz.active { display:flex; }
+
+.progress-bar-wrap {
+  width:100%; max-width:560px; margin-bottom:2rem;
+}
+.progress-meta {
+  display:flex; justify-content:space-between;
+  font-size:0.72rem; color:var(--muted); margin-bottom:0.5rem;
+}
+.progress-track {
+  height:4px; background:rgba(255,255,255,0.08); border-radius:99px; overflow:hidden;
+}
+.progress-fill {
+  height:100%;
+  background: linear-gradient(90deg, var(--accent), #f97316);
+  border-radius:99px; transition:width 0.5s cubic-bezier(0.34,1.56,0.64,1);
+  box-shadow: 0 0 8px var(--accent);
+}
+
+.question-card {
+  width:100%; max-width:560px;
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:2rem 2rem 1.5rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+@keyframes slideIn {
+  from { opacity:0; transform:translateY(30px) scale(0.96); }
+  to   { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.q-category {
+  font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--accent); margin-bottom:0.6rem; font-weight:700;
+}
+.q-text {
+  font-size:1.15rem; font-weight:800; line-height:1.45;
+  color:var(--text); margin-bottom:1.8rem;
+}
+
+/* Answer buttons */
+.answers {
+  display:flex; flex-direction:column; gap:0.65rem;
+}
+
+.ans-btn {
+  display:flex; align-items:center; gap:0.8rem;
+  background:rgba(255,255,255,0.03);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:12px; padding:0.75rem 1.1rem;
+  cursor:pointer; transition:all 0.2s;
+  text-align:left; width:100%;
+  font-family:'Nunito',sans-serif;
+}
+
+.ans-btn:hover { background:rgba(255,255,255,0.07); border-color:rgba(255,255,255,0.15); transform:translateX(4px); }
+
+.ans-btn.selected {
+  border-color: var(--sel-color);
+  background: rgba(var(--sel-rgb), 0.12);
+  box-shadow: 0 0 16px rgba(var(--sel-rgb),0.2);
+}
+
+.ans-dot {
+  width:10px; height:10px; border-radius:50%; flex-shrink:0;
+}
+.ans-label {
+  font-size:0.88rem; font-weight:700; color:var(--text);
+}
+.ans-emoji { font-size:1rem; margin-left:auto; }
+
+/* Answer color variants */
+.ans-btn[data-val="2"]  { --sel-color:var(--yes);    --sel-rgb:34,197,94;  }
+.ans-btn[data-val="1"]  { --sel-color:var(--probyes); --sel-rgb:134,239,172;}
+.ans-btn[data-val="0"]  { --sel-color:var(--maybe);   --sel-rgb:148,163,184;}
+.ans-btn[data-val="-1"] { --sel-color:var(--probno);  --sel-rgb:252,165,165;}
+.ans-btn[data-val="-2"] { --sel-color:var(--no);      --sel-rgb:239,68,68; }
+
+.ans-btn[data-val="2"]  .ans-dot { background:var(--yes); }
+.ans-btn[data-val="1"]  .ans-dot { background:var(--probyes); }
+.ans-btn[data-val="0"]  .ans-dot { background:var(--maybe); }
+.ans-btn[data-val="-1"] .ans-dot { background:var(--probno); }
+.ans-btn[data-val="-2"] .ans-dot { background:var(--no); }
+
+.nav-row {
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:1.5rem; padding-top:1rem;
+  border-top:1px solid var(--border);
+}
+.nav-btn {
+  background:transparent;
+  border:1px solid rgba(255,255,255,0.1); border-radius:8px;
+  padding:0.5rem 1.2rem;
+  font-family:'Nunito',sans-serif; font-size:0.82rem; font-weight:700;
+  color:var(--muted); cursor:pointer; transition:all 0.2s;
+}
+.nav-btn:hover:not(:disabled) { border-color:var(--accent); color:var(--accent); }
+.nav-btn:disabled { opacity:0.3; cursor:not-allowed; }
+
+.next-btn {
+  background: linear-gradient(135deg, var(--accent), #f97316);
+  border:none; border-radius:8px;
+  padding:0.5rem 1.4rem;
+  font-family:'Nunito',sans-serif; font-size:0.88rem; font-weight:900;
+  color:#000; cursor:pointer; transition:all 0.2s;
+  opacity:0.4; pointer-events:none;
+}
+.next-btn.ready { opacity:1; pointer-events:all; }
+.next-btn.ready:hover { transform:translateY(-1px); box-shadow:0 4px 15px rgba(245,158,11,0.4); }
+
+/* ====== RESULTS ====== */
+#results { min-height:100vh; display:none; flex-direction:column; align-items:center; padding:2rem 1rem 4rem; }
+#results.active { display:flex; }
+
+.results-inner { width:100%; max-width:600px; }
+
+.result-header {
+  text-align:center; margin-bottom:2rem;
+  animation: fadeUp 0.6s ease both;
+}
+.result-header .label { font-size:0.7rem; letter-spacing:0.3em; text-transform:uppercase; color:var(--accent); }
+.result-header h2 { font-family:'Bebas Neue',sans-serif; font-size:clamp(2rem,6vw,3.5rem); color:var(--text); margin:0.2rem 0; }
+
+/* Radar card */
+.radar-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; padding:1.5rem;
+  margin-bottom:1.5rem;
+  animation: fadeUp 0.6s ease both 0.1s;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.radar-title {
+  font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase;
+  color:var(--muted); text-align:center; margin-bottom:1rem;
+}
+
+.radar-grid {
+  display:flex; gap:1.5rem; align-items:center; justify-content:center; flex-wrap:wrap;
+}
+
+svg#radarSvg { overflow:visible; }
+
+/* Stats list beside radar */
+.stats-list-result {
+  display:flex; flex-direction:column; gap:0.7rem; flex:1; min-width:180px;
+}
+.stat-item {
+  display:flex; flex-direction:column; gap:0.25rem;
+}
+.stat-item-top {
+  display:flex; justify-content:space-between; align-items:center;
+}
+.stat-item-name { font-size:0.78rem; font-weight:800; color:var(--text); display:flex; align-items:center; gap:0.4rem; }
+.stat-item-val { font-size:0.78rem; font-weight:800; }
+.stat-bar-bg { height:5px; background:rgba(255,255,255,0.06); border-radius:99px; overflow:hidden; }
+.stat-bar-fill { height:100%; border-radius:99px; transition:width 1s cubic-bezier(0.34,1.56,0.64,1); }
+
+/* Pokemon card */
+.pokemon-card {
+  background:var(--card); border:1px solid var(--border);
+  border-radius:20px; overflow:hidden;
+  animation: fadeUp 0.6s ease both 0.2s;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+}
+.pokemon-card-header {
+  padding:1.2rem 1.5rem 0.8rem;
+  background: linear-gradient(135deg, var(--poke-color-1, #1e2a40), var(--poke-color-2, #0f172a));
+  text-align:center;
+}
+.pokemon-card-header .label {
+  font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:rgba(255,255,255,0.5); margin-bottom:0.3rem;
+}
+.pokemon-name {
+  font-family:'Bebas Neue',sans-serif;
+  font-size:2.2rem; color:#fff; letter-spacing:0.05em; line-height:1;
+}
+.pokemon-img-wrap {
+  position:relative; text-align:center; padding:0.5rem 0;
+}
+.pokemon-img {
+  width:140px; height:140px; object-fit:contain;
+  filter: drop-shadow(0 8px 30px rgba(0,0,0,0.4));
+  animation: pokeFloat 3s ease-in-out infinite;
+}
+@keyframes pokeFloat {
+  0%,100% { transform:translateY(0); }
+  50% { transform:translateY(-10px); }
+}
+.pokemon-types {
+  display:flex; gap:0.5rem; justify-content:center; margin:0.5rem 0;
+}
+.type-badge {
+  font-size:0.65rem; font-weight:800; letter-spacing:0.12em; text-transform:uppercase;
+  padding:0.25rem 0.7rem; border-radius:99px;
+}
+.pokemon-body { padding:1.2rem 1.5rem 1.5rem; }
+.pokemon-desc {
+  font-size:0.88rem; color:var(--muted); line-height:1.65;
+  border-left:2px solid var(--accent); padding-left:0.8rem;
+  margin-bottom:1rem;
+}
+.pokemon-match-title {
+  font-size:0.65rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--muted); margin-bottom:0.6rem;
+}
+.pokemon-match-bars { display:flex; flex-direction:column; gap:0.4rem; }
+.match-row { display:flex; align-items:center; gap:0.7rem; }
+.match-label { font-size:0.72rem; font-weight:700; color:var(--muted); min-width:100px; }
+.match-bar-bg { flex:1; height:5px; background:rgba(255,255,255,0.06); border-radius:99px; overflow:hidden; }
+.match-bar-fill { height:100%; border-radius:99px; }
+
+.retry-btn {
+  display:block; width:100%; margin-top:1.5rem;
+  padding:0.9rem;
+  background:rgba(255,255,255,0.04);
+  border:1px solid rgba(255,255,255,0.08); border-radius:12px;
+  font-family:'Nunito',sans-serif; font-size:0.85rem; font-weight:800;
+  color:var(--muted); cursor:pointer; transition:all 0.3s;
+  animation: fadeUp 0.6s ease both 0.35s;
+}
+.retry-btn:hover { border-color:var(--accent); color:var(--accent); background:rgba(245,158,11,0.05); }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(24px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* Tooltip */
+.tooltip { position:relative; }
+
+/* Loading overlay */
+#loadingOverlay {
+  position:fixed; inset:0; background:var(--bg);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  z-index:100; transition:opacity 0.5s;
+}
+#loadingOverlay.hidden { opacity:0; pointer-events:none; }
+.loading-pokeball {
+  width:60px; height:60px; animation:spin 1s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+.loading-text { font-size:0.75rem; letter-spacing:0.2em; color:var(--muted); margin-top:1rem; text-transform:uppercase; }
+
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- ===== INTRO ===== -->
+<section id="intro" class="screen active">
+  <div class="pokeball-anim">
+    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="48" fill="#1a2236" stroke="rgba(245,158,11,0.3)" stroke-width="2"/>
+      <path d="M2 50 Q50 38 98 50" fill="#f59e0b" opacity="0.7"/>
+      <path d="M2 50 Q50 62 98 50" fill="none"/>
+      <rect x="0" y="46" width="100" height="8" fill="rgba(245,158,11,0.8)"/>
+      <circle cx="50" cy="50" r="14" fill="#0b0f1a" stroke="rgba(245,158,11,0.6)" stroke-width="3"/>
+      <circle cx="50" cy="50" r="7" fill="#f59e0b" opacity="0.9"/>
+    </svg>
+  </div>
+  <div class="intro-tag">Quiz de personnalité</div>
+  <h1 class="intro-title">Quel <span>Pokémon</span><br>es-tu ?</h1>
+  <p class="intro-sub">Réponds à 24 questions et découvre tes stats humaines… et le Pokémon qui te correspond le mieux.</p>
+  <button class="start-btn" onclick="startQuiz()">Commencer le quiz ✦</button>
+  <div class="cats">
+    <span class="cat-chip">📚 Culture</span>
+    <span class="cat-chip">✨ Physique</span>
+    <span class="cat-chip">👗 Style</span>
+    <span class="cat-chip">🌟 Personnalité</span>
+    <span class="cat-chip">🧠 Intelligence</span>
+    <span class="cat-chip">💛 Romantisme</span>
+  </div>
+</section>
+
+<!-- ===== QUIZ ===== -->
+<section id="quiz" class="screen">
+  <div class="progress-bar-wrap">
+    <div class="progress-meta">
+      <span id="qCounter">Question 1 / 24</span>
+      <span id="qCategory"></span>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <div class="question-card" id="questionCard">
+    <div class="q-category" id="qCatLabel"></div>
+    <div class="q-text" id="qText"></div>
+    <div class="answers" id="answersDiv"></div>
+    <div class="nav-row">
+      <button class="nav-btn" id="prevBtn" onclick="prevQ()" disabled>← Précédent</button>
+      <button class="next-btn" id="nextBtn" onclick="nextQ()">Suivant →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ===== RESULTS ===== -->
+<section id="results" class="screen">
+  <div class="results-inner">
+    <div class="result-header">
+      <div class="label">Tes résultats</div>
+      <h2>Ton profil<br><span id="resultName" style="color:var(--accent)"></span></h2>
+    </div>
+
+    <div class="radar-card">
+      <div class="radar-title">Statistiques · Sur 31</div>
+      <div class="radar-grid">
+        <svg id="radarSvg" width="200" height="200" viewBox="0 0 200 200"></svg>
+        <div class="stats-list-result" id="statsListResult"></div>
+      </div>
+    </div>
+
+    <div class="pokemon-card" id="pokeCard">
+      <div class="pokemon-card-header" id="pokeHeader">
+        <div class="label">Ton Pokémon correspondant</div>
+        <div class="pokemon-name" id="pokeName"></div>
+        <div class="pokemon-types" id="pokeTypes"></div>
+        <div class="pokemon-img-wrap">
+          <img class="pokemon-img" id="pokeImg" src="" alt="">
+        </div>
+      </div>
+      <div class="pokemon-body">
+        <p class="pokemon-desc" id="pokeDesc"></p>
+        <div class="pokemon-match-title">Correspondance par stat</div>
+        <div class="pokemon-match-bars" id="pokeMatchBars"></div>
+      </div>
+    </div>
+
+    <button class="retry-btn" onclick="restartQuiz()">↺ Recommencer le quiz</button>
+  </div>
+</section>
+
+</div>
+
+<script>
+// =====================
+// QUESTIONS
+// =====================
+const STATS = [
+  { key:'culture',      name:'Culture',      icon:'📚', color:'#60a5fa' },
+  { key:'physique',     name:'Physique',     icon:'✨', color:'#f472b6' },
+  { key:'style',        name:'Style',        icon:'👗', color:'#a78bfa' },
+  { key:'personnalite', name:'Personnalité', icon:'🌟', color:'#fb923c' },
+  { key:'intelligence', name:'Intelligence', icon:'🧠', color:'#34d399' },
+  { key:'romantisme',   name:'Romantisme',   icon:'💛', color:'#f9a8d4' },
+];
+
+const QUESTIONS = [
+  // Culture ×4
+  { stat:'culture',      text:'Je lis régulièrement des livres, articles ou documentaires par curiosité.' },
+  { stat:'culture',      text:'Je peux tenir une conversation sur des sujets variés (histoire, science, art…).' },
+  { stat:'culture',      text:'Je m\'intéresse à d\'autres cultures, langues, ou façons de vivre.' },
+  { stat:'culture',      text:'J\'aime apprendre de nouvelles choses même sans y être obligé·e.' },
+  // Physique ×4
+  { stat:'physique',     text:'Je prends soin de mon corps (exercice, sommeil, alimentation).' },
+  { stat:'physique',     text:'Je me sens bien dans mon apparence physique au quotidien.' },
+  { stat:'physique',     text:'J\'accorde de l\'attention à mes cheveux et à ma peau.' },
+  { stat:'physique',     text:'Mon énergie physique est bonne ; je me sens rarement épuisé·e sans raison.' },
+  // Style ×4
+  { stat:'style',        text:'Je choisis mes tenues avec intention, pas juste au hasard.' },
+  { stat:'style',        text:'Mon style vestimentaire me représente vraiment.' },
+  { stat:'style',        text:'J\'aime expérimenter avec le maquillage, les accessoires ou la coiffure.' },
+  { stat:'style',        text:'Je remarque rapidement le style des autres et les tendances.' },
+  // Personnalité ×4
+  { stat:'personnalite', text:'Les gens me décrivent souvent comme quelqu\'un de facile à approcher.' },
+  { stat:'personnalite', text:'Je gère bien mes émotions dans les moments difficiles.' },
+  { stat:'personnalite', text:'J\'ai un sens de l\'humour naturel et j\'aime rire.' },
+  { stat:'personnalite', text:'Je suis fiable : si je dis que je fais quelque chose, je le fais.' },
+  // Intelligence ×4
+  { stat:'intelligence', text:'Je trouve des solutions créatives quand les choses ne se passent pas comme prévu.' },
+  { stat:'intelligence', text:'J\'apprends vite des nouvelles compétences ou outils.' },
+  { stat:'intelligence', text:'Je suis à l\'aise pour prendre des décisions avec peu d\'informations.' },
+  { stat:'intelligence', text:'Je comprends généralement vite l\'essence d\'une situation complexe.' },
+  // Romantisme ×4
+  { stat:'romantisme',   text:'Je fais des petites attentions spontanées à la personne que j\'aime.' },
+  { stat:'romantisme',   text:'Je sais maintenir le désir et la complicité dans une relation.' },
+  { stat:'romantisme',   text:'Je ne tue pas l\'ambiance avec des sujets inappropriés au mauvais moment.' },
+  { stat:'romantisme',   text:'J\'exprime facilement mes sentiments et mon affection.' },
+];
+
+const ANSWERS = [
+  { label:'Oui, tout à fait',  val:2,  emoji:'💚', color:'#22c55e' },
+  { label:'Plutôt oui',        val:1,  emoji:'🟢', color:'#86efac' },
+  { label:'Peut-être / Moyen', val:0,  emoji:'🔘', color:'#94a3b8' },
+  { label:'Plutôt non',        val:-1, emoji:'🔴', color:'#fca5a5' },
+  { label:'Non, pas du tout',  val:-2, emoji:'❌', color:'#ef4444' },
+];
+
+// =====================
+// POKÉMON DATABASE
+// =====================
+// Each Pokémon has stat affinities (0–1) per stat category
+// and a personality match description.
+const POKEMON_DB = [
+  {
+    id: 149, name: 'Dracolosse', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/149.png',
+    types: ['Dragon','Vol'], colors:['#1a2d4a','#0d2038'],
+    typeColors: ['#6f35fc','#a98ff3'],
+    desc: 'Sage, puissant et équilibré, Dracolosse incarne la maîtrise complète de soi. Rare et exceptionnel, il domine tous les domaines sans ostentation.',
+    stats: { culture:0.9, physique:0.95, style:0.7, personnalite:0.85, intelligence:0.95, romantisme:0.7 }
+  },
+  {
+    id: 6, name: 'Dracaufeu', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/6.png',
+    types: ['Feu','Vol'], colors:['#3d1a0e','#1a0a05'],
+    typeColors: ['#ff9c54','#ffb347'],
+    desc: 'Charismatique et intense, Dracaufeu dégage une énergie puissante. Passionné en tout, il aime séduire autant par son style que par sa personnalité volcanique.',
+    stats: { culture:0.6, physique:0.9, style:0.85, personnalite:0.95, intelligence:0.7, romantisme:0.75 }
+  },
+  {
+    id: 65, name: 'Alakazam', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/65.png',
+    types: ['Psy'], colors:['#2a1f3d','#160f26'],
+    typeColors: ['#f95587','#ea7298'],
+    desc: 'Brillant et analytique, Alakazam possède un QI hors norme. Curieux insatiable, il préfère comprendre le monde plutôt que de le subir.',
+    stats: { culture:0.95, physique:0.45, style:0.5, personnalite:0.65, intelligence:0.98, romantisme:0.5 }
+  },
+  {
+    id: 350, name: 'Milobellus', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/350.png',
+    types: ['Eau','Normal'], colors:['#0d2a35','#061520'],
+    typeColors: ['#6390f0','#a8c0f0'],
+    desc: 'Élégant et raffiné, Milobellus est le symbole du style et de la grâce. Beau à regarder, il séduit par son apparence autant que par sa douceur.',
+    stats: { culture:0.6, physique:0.85, style:0.98, personnalite:0.8, intelligence:0.55, romantisme:0.85 }
+  },
+  {
+    id: 448, name: 'Lucario', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/448.png',
+    types: ['Combat','Acier'], colors:['#0f1f3d','#060e1f'],
+    typeColors: ['#c22e28','#7794d4'],
+    desc: 'Loyal, discipliné et intuitif, Lucario comprend les émotions des autres instinctivement. Il incarne l\'équilibre entre force physique et intelligence émotionnelle.',
+    stats: { culture:0.7, physique:0.9, style:0.75, personnalite:0.9, intelligence:0.85, romantisme:0.8 }
+  },
+  {
+    id: 282, name: 'Gardevoir', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/282.png',
+    types: ['Psy','Fée'], colors:['#1a2d1a','#0d160d'],
+    typeColors: ['#f95587','#a33ea1'],
+    desc: 'Doux·ce, romantique et profondément empathique, Gardevoir ferait tout pour ceux qu\'il·elle aime. Rare sensibilité et grand cœur sont sa marque de fabrique.',
+    stats: { culture:0.65, physique:0.7, style:0.8, personnalite:0.9, intelligence:0.8, romantisme:0.98 }
+  },
+  {
+    id: 445, name: 'Carchacrok', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/445.png',
+    types: ['Dragon','Sol'], colors:['#1c2614','#0e130a'],
+    typeColors: ['#6f35fc','#b69e31'],
+    desc: 'Dominant, ambitieux et imposant, Carchacrok ne passe pas inaperçu. Il a une présence physique et une confiance en lui qui impressionne naturellement.',
+    stats: { culture:0.55, physique:0.98, style:0.8, personnalite:0.8, intelligence:0.75, romantisme:0.55 }
+  },
+  {
+    id: 131, name: 'Lokhlass', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/131.png',
+    types: ['Eau','Glace'], colors:['#0a1f2e','#040d14'],
+    typeColors: ['#6390f0','#96d9d6'],
+    desc: 'Mystérieux et envoûtant, Lokhlass est un être à part. Culturellement riche et romantique à sa façon, il attire sans jamais vraiment se dévoiler entièrement.',
+    stats: { culture:0.85, physique:0.75, style:0.7, personnalite:0.75, intelligence:0.7, romantisme:0.75 }
+  },
+  {
+    id: 196, name: 'Mentali', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/196.png',
+    types: ['Psy'], colors:['#2a1530','#150a18'],
+    typeColors: ['#f95587','#ea7298'],
+    desc: 'Instinctif et émotionnel, Mentali ressent tout intensément. Sa personnalité rayonnante et sa profondeur romantique en font quelqu\'un d\'inoubliable.',
+    stats: { culture:0.65, physique:0.7, style:0.8, personnalite:0.92, intelligence:0.78, romantisme:0.9 }
+  },
+  {
+    id: 133, name: 'Évoli', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/133.png',
+    types: ['Normal'], colors:['#2a1e0f','#140e07'],
+    typeColors: ['#a8a878','#c8c8a0'],
+    desc: 'Adaptable, curieux et plein de potentiel, Évoli s\'adapte à toutes les situations. Polyvalent et attachant, il a un peu de tout et excelle à sa façon.',
+    stats: { culture:0.7, physique:0.65, style:0.75, personnalite:0.85, intelligence:0.75, romantisme:0.75 }
+  },
+  {
+    id: 249, name: 'Lugia', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/249.png',
+    types: ['Psychic','Vol'], colors:['#0a1828','#04090f'],
+    typeColors: ['#f95587','#a8c0f0'],
+    desc: 'Rare et mystérieux, Lugia est une présence silencieusement impressionnante. Culture, intelligence et romantisme discret en font un être hors du commun.',
+    stats: { culture:0.92, physique:0.8, style:0.65, personnalite:0.78, intelligence:0.95, romantisme:0.8 }
+  },
+  {
+    id: 184, name: 'Azumarill', sprite: 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/184.png',
+    types: ['Eau','Fée'], colors:['#0a2035','#04101c'],
+    typeColors: ['#6390f0','#d685ad'],
+    desc: 'Chaleureux, sincère et plein de bonne humeur, Azumarill est quelqu\'un sur qui on peut compter. Romantique sans chichi, adorable au naturel.',
+    stats: { culture:0.5, physique:0.6, style:0.55, personnalite:0.95, intelligence:0.6, romantisme:0.88 }
+  },
+];
+
+// =====================
+// STATE
+// =====================
+let current = 0;
+let answers = new Array(QUESTIONS.length).fill(null);
+
+function startQuiz() {
+  showScreen('quiz');
+  renderQuestion();
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[current];
+  const stat = STATS.find(s => s.key === q.stat);
+
+  document.getElementById('qCounter').textContent = `Question ${current+1} / ${QUESTIONS.length}`;
+  document.getElementById('qCategory').textContent = `${stat.icon} ${stat.name}`;
+  document.getElementById('qCatLabel').textContent = `${stat.icon} ${stat.name}`;
+  document.getElementById('qText').textContent = q.text;
+
+  const pct = ((current) / QUESTIONS.length) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  const ans = document.getElementById('answersDiv');
+  ans.innerHTML = '';
+  ANSWERS.forEach(a => {
+    const btn = document.createElement('button');
+    btn.className = 'ans-btn' + (answers[current] === a.val ? ' selected' : '');
+    btn.setAttribute('data-val', a.val);
+    btn.innerHTML = `
+      <span class="ans-dot"></span>
+      <span class="ans-label">${a.label}</span>
+      <span class="ans-emoji">${a.emoji}</span>
+    `;
+    btn.onclick = () => selectAnswer(a.val);
+    ans.appendChild(btn);
+  });
+
+  document.getElementById('prevBtn').disabled = current === 0;
+  const nextBtn = document.getElementById('nextBtn');
+  nextBtn.textContent = current === QUESTIONS.length - 1 ? 'Voir mes résultats 🎯' : 'Suivant →';
+  nextBtn.classList.toggle('ready', answers[current] !== null);
+
+  // Re-render card animation
+  const card = document.getElementById('questionCard');
+  card.style.animation = 'none';
+  card.offsetHeight;
+  card.style.animation = 'slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both';
+}
+
+function selectAnswer(val) {
+  answers[current] = val;
+  document.querySelectorAll('.ans-btn').forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.getAttribute('data-val')) === val);
+  });
+  document.getElementById('nextBtn').classList.add('ready');
+}
+
+function nextQ() {
+  if (answers[current] === null) return;
+  if (current === QUESTIONS.length - 1) {
+    showResults();
+  } else {
+    current++;
+    renderQuestion();
+  }
+}
+
+function prevQ() {
+  if (current > 0) { current--; renderQuestion(); }
+}
+
+// =====================
+// COMPUTE RESULTS
+// =====================
+function computeStats() {
+  const scores = {};
+  STATS.forEach(s => scores[s.key] = 0);
+  const counts = {};
+  STATS.forEach(s => counts[s.key] = 0);
+
+  QUESTIONS.forEach((q, i) => {
+    if (answers[i] !== null) {
+      scores[q.stat] += answers[i];
+      counts[q.stat]++;
+    }
+  });
+
+  // Convert to 0–31 range
+  // Each stat has 4 questions, each can contribute -2 to +2 → total range -8 to +8
+  // Map to 0–31
+  const result = {};
+  STATS.forEach(s => {
+    const raw = scores[s.key]; // -8 to +8
+    const normalized = (raw + 8) / 16; // 0 to 1
+    result[s.key] = Math.round(normalized * 31);
+  });
+  return result;
+}
+
+function findPokemon(stats) {
+  let bestPoke = null, bestScore = -1;
+  POKEMON_DB.forEach(p => {
+    let score = 0;
+    STATS.forEach(s => {
+      const userVal = stats[s.key] / 31; // normalize user
+      const diff = 1 - Math.abs(userVal - p.stats[s.key]);
+      score += diff;
+    });
+    if (score > bestScore) { bestScore = score; bestPoke = p; }
+  });
+  return bestPoke;
+}
+
+function showResults() {
+  const stats = computeStats();
+  const poke = findPokemon(stats);
+
+  // Name from top stat
+  const topStat = STATS.reduce((a, b) => stats[a.key] > stats[b.key] ? a : b);
+
+  showScreen('results');
+
+  document.getElementById('resultName').textContent = poke.name;
+
+  // Radar
+  drawRadar(stats);
+
+  // Stats list
+  const sl = document.getElementById('statsListResult');
+  sl.innerHTML = '';
+  STATS.forEach(s => {
+    const val = stats[s.key];
+    const pct = (val/31)*100;
+    const div = document.createElement('div');
+    div.className = 'stat-item';
+    div.innerHTML = `
+      <div class="stat-item-top">
+        <span class="stat-item-name" style="color:${s.color}">${s.icon} ${s.name}</span>
+        <span class="stat-item-val" style="color:${s.color}">${val}<span style="font-size:0.6rem;color:var(--muted)">/31</span></span>
+      </div>
+      <div class="stat-bar-bg">
+        <div class="stat-bar-fill" style="width:0%;background:${s.color};" data-pct="${pct}"></div>
+      </div>`;
+    sl.appendChild(div);
+  });
+  // Animate bars
+  setTimeout(() => {
+    document.querySelectorAll('.stat-bar-fill').forEach(el => {
+      el.style.transition = 'width 1s cubic-bezier(0.34,1.56,0.64,1)';
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+  }, 200);
+
+  // Pokémon card
+  document.getElementById('pokeName').textContent = poke.name;
+  document.getElementById('pokeImg').src = poke.sprite;
+  document.getElementById('pokeImg').alt = poke.name;
+  document.getElementById('pokeDesc').textContent = poke.desc;
+
+  const header = document.getElementById('pokeHeader');
+  header.style.background = `linear-gradient(135deg, ${poke.colors[0]}, ${poke.colors[1]})`;
+
+  const typesDiv = document.getElementById('pokeTypes');
+  typesDiv.innerHTML = poke.types.map((t,i) =>
+    `<span class="type-badge" style="background:${poke.typeColors[i]}22;color:${poke.typeColors[i]};border:1px solid ${poke.typeColors[i]}44">${t}</span>`
+  ).join('');
+
+  // Match bars
+  const matchBars = document.getElementById('pokeMatchBars');
+  matchBars.innerHTML = '';
+  STATS.forEach(s => {
+    const userPct = (stats[s.key]/31)*100;
+    const pokePct = poke.stats[s.key]*100;
+    const matchPct = 100 - Math.abs(userPct - pokePct);
+    const row = document.createElement('div');
+    row.className = 'match-row';
+    row.innerHTML = `
+      <span class="match-label">${s.icon} ${s.name}</span>
+      <div class="match-bar-bg">
+        <div class="match-bar-fill" style="width:0%;background:${s.color};transition:width 1s ease;" data-pct="${matchPct}"></div>
+      </div>
+      <span style="font-size:0.72rem;font-weight:800;color:${s.color};min-width:34px;text-align:right">${Math.round(matchPct)}%</span>
+    `;
+    matchBars.appendChild(row);
+  });
+  setTimeout(() => {
+    matchBars.querySelectorAll('.match-bar-fill').forEach(el => {
+      el.style.width = el.getAttribute('data-pct') + '%';
+    });
+  }, 400);
+}
+
+function drawRadar(stats) {
+  const svg = document.getElementById('radarSvg');
+  svg.innerHTML = '';
+  const cx=100, cy=100, r=75;
+  const n = STATS.length;
+  const angles = STATS.map((_,i) => (Math.PI*2*i/n) - Math.PI/2);
+
+  // Grid
+  [0.25,0.5,0.75,1].forEach(sc => {
+    const pts = angles.map(a => `${cx+Math.cos(a)*r*sc},${cy+Math.sin(a)*r*sc}`).join(' ');
+    const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+    poly.setAttribute('points',pts);
+    poly.setAttribute('fill','none');
+    poly.setAttribute('stroke','rgba(255,255,255,0.06)');
+    poly.setAttribute('stroke-width','1');
+    svg.appendChild(poly);
+  });
+
+  // Axes
+  angles.forEach(a => {
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1',cx); line.setAttribute('y1',cy);
+    line.setAttribute('x2',cx+Math.cos(a)*r); line.setAttribute('y2',cy+Math.sin(a)*r);
+    line.setAttribute('stroke','rgba(255,255,255,0.07)'); line.setAttribute('stroke-width','1');
+    svg.appendChild(line);
+  });
+
+  // Data poly
+  const pts = STATS.map((s,i) => {
+    const sc = stats[s.key]/31;
+    return `${cx+Math.cos(angles[i])*r*sc},${cy+Math.sin(angles[i])*r*sc}`;
+  }).join(' ');
+  const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
+  poly.setAttribute('points',pts);
+  poly.setAttribute('fill','rgba(245,158,11,0.12)');
+  poly.setAttribute('stroke','#f59e0b');
+  poly.setAttribute('stroke-width','2');
+  poly.setAttribute('stroke-linejoin','round');
+  svg.appendChild(poly);
+
+  // Dots + labels
+  STATS.forEach((s,i) => {
+    const sc = stats[s.key]/31;
+    const a = angles[i];
+    const px = cx+Math.cos(a)*r*sc, py = cy+Math.sin(a)*r*sc;
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx',px); dot.setAttribute('cy',py); dot.setAttribute('r','4');
+    dot.setAttribute('fill',s.color);
+    dot.setAttribute('filter',`drop-shadow(0 0 4px ${s.color})`);
+    svg.appendChild(dot);
+
+    const lx = cx+Math.cos(a)*(r+18), ly = cy+Math.sin(a)*(r+18);
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('x',lx); txt.setAttribute('y',ly);
+    txt.setAttribute('text-anchor','middle'); txt.setAttribute('dominant-baseline','middle');
+    txt.setAttribute('fill',s.color); txt.setAttribute('font-size','8');
+    txt.setAttribute('font-family','Nunito,sans-serif'); txt.setAttribute('font-weight','900');
+    txt.textContent = s.name.toUpperCase();
+    svg.appendChild(txt);
+  });
+}
+
+function restartQuiz() {
+  current = 0;
+  answers = new Array(QUESTIONS.length).fill(null);
+  showScreen('quiz');
+  renderQuestion();
+}
+</script>
+</body>
+</html>
