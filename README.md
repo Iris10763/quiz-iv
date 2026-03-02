@@ -13,7 +13,7 @@ Découvre ton profil humain en 6 statistiques — et le Pokémon qui te correspo
 ## Comment ça marche ?
 
 Réponds à **24 questions** sur ta personnalité, ton style, ta culture et bien plus.  
-À la fin, tu obtiens ton **radar de stats sur 31** (comme les IV Pokémon) et le Pokémon qui te ressemble le plus parmi 12 candidats.
+À la fin, tu obtiens ton **radar de stats sur 31** (comme les IV Pokémon) et le Pokémon qui te ressemble le plus.
 
 ---
 
