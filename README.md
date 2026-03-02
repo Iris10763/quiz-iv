@@ -2,6 +2,12 @@
 
 Découvre ton profil humain en 6 statistiques — et le Pokémon qui te correspond.
 
+<p align="center">
+  <a href="https://iris10763.github.io/quiz-iv/main.html">
+    <strong>→ Take the quiz </strong>
+  </a>
+</p>
+
 ---
 
 ## Comment ça marche ?
@@ -24,7 +30,7 @@ Tu peux aussi **renseigner tes stats à la main** si tu préfères jouer en mode
 - **`quiz-pokemon.html`** — Le quiz complet + ton Pokémon
 - **`stats-humaines.html`** — La fiche de stats en mode libre
 
-Aucune installation. Ouvre simplement le fichier dans ton navigateur. ->  <-
+Aucune installation. Ouvre simplement le fichier dans ton navigateur. 
 
 ---
 
