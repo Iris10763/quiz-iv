@@ -24,3 +24,4 @@ Réponds à **24 questions** sur ta personnalité, ton style, ta culture et bien
 ---
 
 *Sprites Pokémon © Nintendo / Game Freak / The Pokémon Company.*
+*Made with AI*
